@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Regnum — Podgląd Elitarnych Potworów (1★ / 2★)</title>
+  <style>
+    :root {
+      --bg: #111316;
+      --card: #1a1e23;
+      --border: #2c333c;
+      --text: #e8ecf1;
+      --muted: #9aa5b1;
+      --gold: #f0c05a;
+      --cyan: #67d8ff;
+      --green: #69db7c;
+      --purple: #c084fc;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    header {
+      padding: 28px 20px 18px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, #171b21 0%, #111316 100%);
+    }
+    header h1 {
+      margin: 0 0 8px;
+      font-size: 1.75rem;
+      letter-spacing: 0.3px;
+      color: var(--gold);
+    }
+    header p {
+      margin: 0 auto 16px;
+      max-width: 720px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .filter-btn {
+      background: #232830;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 7px 15px;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .filter-btn:hover { border-color: var(--gold); }
+    .filter-btn.active {
+      background: var(--gold);
+      color: #14161a;
+      border-color: var(--gold);
+      font-weight: 700;
+    }
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 24px 16px 56px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+    .card {
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.32);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .card.approved {
+      border-color: #ef4444;
+      box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.28), 0 8px 28px rgba(239, 68, 68, 0.22);
+    }
+    .card.hidden { display: none; }
+    .card-head {
+      padding: 16px 20px 12px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .card-title-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    .card-title { margin: 0; font-size: 1.18rem; }
+    .badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .badge-new { background: rgba(103, 216, 255, 0.16); color: var(--cyan); border: 1px solid rgba(103, 216, 255, 0.4); }
+    .badge-live { background: rgba(105, 219, 124, 0.16); color: var(--green); border: 1px solid rgba(105, 219, 124, 0.4); }
+    .badge-alt { background: rgba(192, 132, 252, 0.16); color: var(--purple); border: 1px solid rgba(192, 132, 252, 0.4); }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn {
+      background: #27303b;
+      color: var(--text);
+      border: 1px solid #394452;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 0.84rem;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn:hover { background: #323e4d; border-color: var(--gold); }
+    .btn.copied { background: #265936; border-color: var(--green); color: #fff; }
+    .btn-delete {
+      background: #2f2024;
+      border-color: #6b2d37;
+      color: #ff9ca8;
+    }
+    .btn-delete:hover { background: #4a1f28; border-color: #ef4444; color: #fff; }
+    .btn-restore {
+      background: #1f3328;
+      border-color: #2f6b48;
+      color: #8ce99a;
+    }
+    .btn-restore:hover { background: #264a35; border-color: var(--green); color: #fff; }
+    .trash-bar {
+      max-width: 1180px;
+      margin: 16px auto 0;
+      padding: 12px 18px;
+      background: #23191c;
+      border: 1px solid #5c2b33;
+      border-radius: 10px;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      color: #f3c6cc;
+      font-size: 0.9rem;
+    }
+    .trash-bar.visible { display: flex; }
+    .card.deleted { opacity: 0.78; border-style: dashed; border-color: #6b2d37; }
+    .approve-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: #27303b;
+      color: var(--text);
+      border: 1px solid #394452;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 0.84rem;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s ease;
+    }
+    .approve-label:hover { background: #323e4d; border-color: #ef4444; }
+    .approve-label input {
+      width: 15px;
+      height: 15px;
+      accent-color: #ef4444;
+      cursor: pointer;
+      margin: 0;
+    }
+    .card.approved .approve-label {
+      background: rgba(239, 68, 68, 0.18);
+      border-color: #ef4444;
+      color: #ff8a8a;
+    }
+    .card-desc {
+      padding: 10px 20px 0;
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+    .gif-wrap {
+      padding: 16px 20px 20px;
+      text-align: center;
+    }
+    .gif-wrap img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      border: 1px solid #2b3138;
+      image-rendering: pixelated;
+      cursor: zoom-in;
+      background: #2a2e2c;
+    }
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.88);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 999;
+      cursor: zoom-out;
+    }
+    .lightbox.open { display: flex; }
+    .lightbox img {
+      max-width: 96vw;
+      max-height: 94vh;
+      border-radius: 10px;
+      image-rendering: pixelated;
+      box-shadow: 0 0 40px rgba(0,0,0,0.8);
+    }
+    footer {
+      text-align: center;
+      padding: 18px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Regnum — Elitarne Potwory (1★ &amp; 2★)</h1>
+    <p>Wszystkie animowane podglądy (0★ oryginał | 1★ | 2★, kierunki S/E/W/N 3× + podgląd 1× w ciemnej jaskini). Kliknij dowolny GIF, aby powiększyć.</p>
+    <div class="filters">
+      <button class="filter-btn active" data-filter="all" id="filter-all">Wszystkie (54)</button>
+      <button class="filter-btn" data-filter="live" id="filter-live">Na Serwerze / Stagingu (32)</button>
+      <button class="filter-btn" data-filter="new3" id="filter-new3">Propozycje / Nowe (10)</button>
+      <button class="filter-btn" data-filter="elf" id="filter-elf">Inne Style Elfa (2)</button>
+      <button class="filter-btn" data-filter="alt" id="filter-alt">Warianty &amp; Archiwum (10)</button>
+      <button class="filter-btn" data-filter="approved" id="filter-approved">✓ Zatwierdzone (0)</button>
+      <button class="filter-btn" data-filter="unapproved" id="filter-unapproved">Do sprawdzenia (54)</button>
+      <button class="filter-btn" data-filter="trash" id="filter-trash">🗑 Kosz (0)</button>
+    </div>
+  </header>
+
+  <div class="trash-bar" id="trash-bar">
+    <span>Usunięte sprite'y są ukryte z galerii (zapisane lokalnie w przeglądarce). Możesz je przywrócić albo skopiować listę do trwałego usunięcia z repozytorium.</span>
+    <div class="actions">
+      <button class="btn" id="copy-deleted-btn">📋 Kopiuj listę usuniętych</button>
+      <button class="btn btn-restore" id="restore-all-btn">↩ Przywróć wszystkie</button>
+    </div>
+  </div>
+
+  <main id="gallery"></main>
+
+  <div class="lightbox" id="lightbox">
+    <img id="lightbox-img" src="" alt="Powiększony podgląd" />
+  </div>
+
+  <footer>Regnum 7.4 / 7.72 Elite Sprites Showcase</footer>
+
+  <script>
+    const items = [
+      {
+        file: "54_ogre_gruntz_rework.gif",
+        title: "Ogre Gruntz (Rework) — Nie do porównania ze starym lt 430 (baza CipSoft T15 1854, 8 faz)",
+        cat: "new3",
+        badge: ["Nowy Rework — Ogre Gruntz", "badge-new"],
+        sprites: "sprites/54_ogre_gruntz_rework",
+        desc: "Prawdziwy pixel-art CipSoftu (zero prymitywów z kodu, zero doklejanej anatomii, 0 CUT, blokada głowy E 1.00/0.94 i W 1.00/0.98 w sprite_review): gołoręki, potężny Ogre Gruntz na bazie T15 1854 (Orclops Bloodbreaker) całkowicie przerobiony pod klasyczną Tibię 7.4/7.72 obok Behemota (#55) i Cyklopa (#22). Usunięto bez śladu wszystkie czerwone runy krwi, zamieniono 1 oko orclopsa na 2 płonące bursztynowo-pomarańczowe oczy ogra pod łukami brwiowymi, przemapowano miętową skórę na ziemisty oliwkowo-ochrowy odcień ogra (lum 75..83, p90 151 — jak Behemoth), bordowe futro na ciemne wilcze futro, a turkusową klamrę i obręcze na kute ciemne żelazo. Pełne 36 klatek (idle + 8 faz chodu × N/E/S/W), zero podobieństwa do usuniętego lt 430."
+      },
+      {
+        file: "53_thaian_soldier_5addon_tarcza_szata.gif",
+        title: "Thaian Soldier (542 M / 543 F) — Addon 5: Tarcza \"T\" + Falująca Szata V5 (Clean Audit: 0 Kolizji)",
+        cat: "new3",
+        badge: ["Gotowy Addon 5 + Szata V5", "badge-new"],
+        desc: "Finalnie oczyszczony Thaian Soldier (542 M i 543 F, pieszo i na koniu 544, 8 klatek a=1..8, 723 klatki zweryfikowane, 0 diffów): (1) Audyt 288 klatek — 0 luźnych/migających pikseli (prune_islands na wszystkich tarczach i szatach), 0 ucięć na krawędziach i 0 dziur; (2) 0 kolizji szaty z tarczą, mieczem i hełmem w Dir W i Dir N (pieszo i konno) oraz tarcza Foot E podniesiona czysto nad czubek miecza i spięta 1:1 z ruchem srebrnej rękawicy; (3) Mount E — 3px złota krawędź tarczy płynnie chowa się za grzywą konia; (4) Organiczne, wydęte wiatrem szaty V5 we wszystkich 4 kierunkach (Mount W zasłania połowę zadu, Mount S/E cały tył konia)."
+      },
+      {
+        file: "52_orc_warlord_helm_szata_elity.gif",
+        title: "Orc Warlord #2 — 1★ Z Hełmem (Silver-Helm) | 2★ Z Hełmem i Szatą (Imperial Warlord)",
+        cat: "new3",
+        badge: ["Nowa Elita — Orc Warlord", "badge-new"],
+        sprites: "sprites/52_orc_warlord_helm_szata",
+        desc: "Spójny zestaw z Orc Leaderem #59 (0 cut gear, w pełni animowany dwuręczny miecz łącznie z czubkiem ostrza w N/W f=2): 1★ Silver-Helm (lśniący kuty srebrzysto-stalowy hełm z brązowym rantem, szafirem i zagiętymi rogami zamiast drobnych szarych kolców, jasna stalowa zbroja płytowa kontrastująca z ciemnym 0★, miecz z szafirową głowicą) → 2★ Imperial Warlord (obsydianowo-złoty rogaty hełm z rubinem + królewska karmazynowo-złota szata bojowa widoczna ze wszystkich 4 stron: z przodu w S/E jako zdobiony surcoat ze złotym pasem i spódnicą, z tyłu w W/N jako szeroka pofałdowana szata w osi 45° ze złotym obszyciem, miecz z rubinową głowicą!) + 3-etapowe zwłoki (4148→4149→4147)."
+      },
+      {
+        file: "51_orc_berserker_helm_szata_elity.gif",
+        title: "Orc Berserker #8 — 1★ Z Hełmem (Iron-Helm) | 2★ Z Hełmem i Szatą (Crimson Berserker)",
+        cat: "new3",
+        badge: ["Nowa Elita — Orc Berserker", "badge-new"],
+        sprites: "sprites/51_orc_berserker_helm_szata",
+        desc: "Spójny zestaw z Orc Leaderem #59 (0 cut gear, hełmy zablokowane 1:1 na dynamicznym skoku (-1,-2) Berserkera, pełna animacja gigantycznej halabardy): 1★ Iron-Helm (kuty stalowy hełm bojowy z brązowym rantem i nosalem odsłaniający wściekłe czerwone oczy i ryczącą paszczę z kłami, brązowa bojowa uprząż, hartowana stalowa halabarda) → 2★ Crimson Berserker (rogaty hełm z obsydianowej stali ze złotym pasem i rubinem + pełna karmazynowo-złota szata bojowa widoczna ze wszystkich 4 stron: z przodu w S/E ze złotym pasem i spódnicą pod halabardą, z tyłu w W/N jako szeroka pofałdowana szata w osi 45°!) + 3-etapowe zwłoki (4045→4046→4147)."
+      },
+      {
+        file: "50_orc_leader_helm_szata_elity.gif",
+        title: "Orc Leader #59 — 1★ Z Hełmem (Iron-Helm) | 2★ Z Hełmem i Szatą (Crimson Warlord)",
+        cat: "new3",
+        badge: ["Nowa Elita — Orc Leader", "badge-new"],
+        sprites: "sprites/50_orc_leader_helm_szata",
+        desc: "Klasyczna zielona skóra orka bez neonów, 100% animacja w stylu Tibia 7.4 (0 cut gear): 1★ Iron-Helm (kuty stalowy hełm bojowy z brązowym rantem i nosalem, ciemniejsza stalowa zbroja płytowa z brązowymi akcentami, hartowane miecze) → 2★ Crimson Warlord (rogaty hełm z obsydianowej stali ze złotym pasem i rubinem + królewska karmazynowo-złota szata bojowa widoczna ze wszystkich 4 stron: z przodu w S/E jako zdobiony surcoat ze złotym pasem i falującą spódnicą, a z tyłu w W/N jako szeroka pofałdowana szata/płaszcz w osi 45° ze złotym obszyciem!) + 3-etapowe zwłoki (z hełmem dla 1★ oraz hełmem i szatą dla 2★)."
+      },
+      {
+        file: "47_orc_leader_styl1_krwawy.gif",
+        title: "Orc Leader #59 — Styl 1: Wzór Dwarf Guard (#70)",
+        cat: "new3",
+        badge: ["Propozycja — Orc Leader", "badge-new"],
+        desc: "Porównanie 1:1 z animowanym Dwarf Guardem #70 (wiersz WZÓR na górze): klasyczna zielona skóra orka bez neonów! 1★ Bronze Guard (kuty ciemny brąz, pół-hełm, kute stalowe ostrza) → 2★ Dwarven-Forged (gładki złoto-brązowy hełm kopułowy z rogami jak u Dwarf Guarda, ciężki pancerz z kolczugą, poszerzone miecze i prawdziwa owalna tarcza Dwarf Guarda ze złotą obręczą i krzyżem!) + 3-etapowe zwłoki."
+      },
+      {
+        file: "48_orc_leader_styl2_mrozny.gif",
+        title: "Orc Leader #59 — Styl 2: Wzór Minotaur Guard (#29)",
+        cat: "new3",
+        badge: ["Propozycja — Orc Leader", "badge-new"],
+        desc: "Porównanie 1:1 z animowanym Minotaur Guardem #29 (wiersz WZÓR na górze): klasyczna zielona skóra orka + królewska gwardia! 1★ Cobalt Guard (granatowo-stalowa zbroja ze złotymi krawędziami płyt, brązowe skórzane spodnie, stalowe ostrza) → 2★ Royal Guard (granatowo-złoty kopułowy hełm z rogami po bokach i wielkim, spływającym ogniście czerwonym pióropuszem jak u Minotaur Guarda + poszerzone ciężkie miecze gwardii!) + 3-etapowe zwłoki."
+      },
+      {
+        file: "49_orc_leader_styl3_legion.gif",
+        title: "Orc Leader #59 — Styl 3: Wzór Hero (#73)",
+        cat: "new3",
+        badge: ["Propozycja — Orc Leader", "badge-new"],
+        desc: "Porównanie 1:1 z animowanym Hero #73 (wiersz WZÓR na górze): klasyczna zielona skóra orka w rycerskim wydaniu! 1★ Knight-Slayer (ciepła rycerska zbroja w palecie Hero, niebiesko-stalowe nogawice, czerwony szal pod szyją, stalowe miecze) → 2★ Crimson-Cloak (polerowana srebrna zbroja ze złotym wykończeniem, stalowy rycerski hełm z nosalem, szeroka gładko cieniowana szkarłatna peleryna dokładnie w stylu Hero #73 i poszerzone srebrne miecze!) + 3-etapowe zwłoki."
+      },
+      {
+        file: "49_ebony_eyes_check.png",
+        title: "Fix na Oczy i Skórę Ebony — Zbliżenie 5× Wszystkich 49 Outfitów (Oryginał | Ebony | Maska)",
+        cat: "live",
+        badge: ["Na Serwerze — Oczy & Skin", "badge-live"],
+        desc: "Zbliżenie 5× twarzy i oczu wszystkich 49 looktype'ów na najciemniejszej skórze Ebony (#16): zachowane wszystkie ciemne, zielone, niebieskie i czerwone oczy (strip_eye_pixels z progiem v <= 112) przy jednoczesnym usunięciu białych punktów na twarzach, brodach, rękach i ramionach (grow_skin_rim + pale_rim + split_core)."
+      },
+      {
+        file: "48_thaian_soldier_szata_final.gif",
+        title: "Thaian Soldier (542 M / 543 F) — Szata V3 (Podniesione W + Wyprostowane N + Kon 544)",
+        cat: "new3",
+        badge: ["Gotowa Szata V3", "badge-new"],
+        desc: "Poprawiona anatomicznie szata/peleryna rycerska (y=3) dla Thaian Soldiera 542 M i 543 F: w W podniesiona do góry na plecy zgodnie z perspektywą boczną (odsłonięty przedni naramiennik/ramię), w N wyprostowana pionowo wzdłuż pleców i końskiego zadu, w S/E powiewa za plecami nad butami (0 deptania po szacie), a na koniu 544 naturalnie układa się po końskim zadzie przed białym ogonem. Re-use 533/835 slotów w Tibia.spr (0 nowych ID, 0 diffów)."
+      },
+      {
+        file: "47_thaian_soldier_szata_high_vs_xhigh.gif",
+        title: "Thaian Soldier (542 M / 543 F) — Addon Szaty (y=3): Neon High vs Neon XHigh",
+        cat: "new3",
+        badge: ["Porównanie Modeli", "badge-new"],
+        desc: "Porównanie side-by-side 2 niezależnych agentów zamieniających skrzydła (y=3) na królewską szatę/pelerynę rycerską Thaian Soldiera (542 M i 543 F, pieszo z=0 i konno z=1 na koniu 544, S/E/W/N, 8 klatek chodu, dynamiczne kolory l=1): Oryginał (Skrzydła) | Gemini 4 Neon (High) | Gemini 4 Neon (XHigh) + pasek 1× Dark Cave."
+      },
+      {
+        file: "46_player_skin_masks.png",
+        title: "Kolor Skóry Outfitów Graczy (Tibia.skin) — Wszystkie 49 Looktype'ów Po Poprawce",
+        cat: "live",
+        badge: ["Na Serwerze — Skin", "badge-live"],
+        desc: "Naprawione maski skóry w Tibia.skin (898 czystych sprite'ów, 0 białych punktów we wszystkich 4 kierunkach S/E/W/N i klatkach chodu): usunięte białe specular-punkty na twarzach i dłoniach (Citizen M, Warrior F, Golden M, Beastwarden, Huntress F), naprawiona separacja dłoni/ramion od ciemnych konturów (split_core), usunięte błędne no_back zostawiające jasne twarze/uszy/dłonie w W/N (Hunter, Mage, Pirate, Beggar, Brotherhood, Lamplighter, Thaian Soldier stojący i konny, Beastwarden), naprawiony transponowany clip (u=r+c), pełne maski ramion/brzuchów/łydek/stóp (Oriental M/F, Shaman M/F, Hunter F, Barbarian M/F, Druid F, Wizard F) oraz zachowane oczy na ciemnej skórze Ebony."
+      },
+      {
+        file: "45_custom_runes.png",
+        title: "Nowe Runy & Sakiewka 32×32 (8 Sprite'ów Tibia 7.4/7.72)",
+        cat: "new3",
+        badge: ["Nowe Runy 32×32", "badge-new"],
+        sprites: "sprites/runes",
+        desc: "Komplet 8 przeprojektowanych sprite'ów 32×32 w czystym stylu Tibia 7.4/7.72 (fazowane kamienie 3D ze światłem z lewego górnego rogu, wyryte rowki z poświatą i czystym 1px konturem): 0. Bursztynowe V • 1. Szmaragdowy Trójząb • 2. Karmazynowo-Złota Tabliczka • 3. Ametystowa Runa S • 4. Astralna Gwiazda • 5. Lodowa Spirala • 6. Magmowy Odłamek • 7. Aksamitna Sakiewka na Runy ze złotym sznurkiem. Kliknij 'Pliki sprite'ów', aby pobrać osobne PNG 32×32."
+      },
+      {
+        file: "22_kobold_autorski_elity.gif",
+        title: "Kobold 32×32 (100% Autorski From-Scratch) — Tunnel-Scavenger / Iron-Trapper / Flame-Shaman",
+        cat: "new3",
+        badge: ["Autorski 32×32", "badge-new"],
+        desc: "Narysowany w 100% od zera (bez użycia żadnego innego sprite'a) w izometrii 45° Tibii 7.4: 0★ Kobold (rdzawo-ceglaste łuski, gadzi pysk z kłami, kościane różki, kołyszący się ogon, włócznia kopalniana i płonąca świeczka) • 1★ Kobold Iron-Trapper (szkarłatne łuski, kuty żelazny napierśnik i naramiennik z kolcem, stalowa halabarda i puklerz) • 2★ Kobold Flame-Shaman (obsydianowo-purpurowe smocze łuski, szata szamana, złota korona z rubinem i płonący Kostur Smoczego Ognia)."
+      },
+      {
+        file: "21_dwarf_guard_forge_elity.gif",
+        title: "Dwarf Guard #70 — Deep-Granite Guard / Earthshaker Geomancer (Władca Ziemi)",
+        cat: "new3",
+        badge: ["Nowa Elita", "badge-new"],
+        desc: "1★ Deep-Granite Guard (ciemnoniebieski granitowy pancerz, ognisto-miedziana broda, stalowy topór i brązowa tarcza) • 2★ Earthshaker Geomancer (bazaltowo-mszysty pancerz żywej skały, skalne naramienniki z głazów ziemi i szmaragdowych kryształów, wyrastające spod stóp stalagmity i głazy ziemi unoszące się przy każdym kroku oraz szmaragdowy topór i skalna tarcza)."
+      },
+      {
+        file: "20_vampire_nosferatu_elity.gif",
+        title: "Vampire #68 — Dusk-Shadow Vampire / Crimson Vampire Lord (Looktypes 615 / 616)",
+        cat: "live",
+        badge: ["Na Serwerze", "badge-live"],
+        desc: "1★ Dusk-Shadow Vampire (nocny indygo-fioletowy płaszcz, srebrne guziki i kołnierz, trupio-blada skóra, rubinowe oczy) • 2★ Crimson Vampire Lord (aksamitna karmazynowo-czarna peleryna, wysoki gotycki kołnierz Draculi ze złotym obszyciem, złota klamra i jarzący się rubinowy medalion — bez skrzydeł, 100% klasycznej sylwetki 7.4)."
+      },
+      {
+        file: "10_elf_arcanist_drow.gif",
+        title: "Elf Arcanist #63 — Drow Arcanist / Abyssal Archmage (Looktypes 613 / 614)",
+        cat: "live",
+        badge: ["Na Serwerze", "badge-live"],
+        desc: "1★ Drow Arcanist (obsydianowa skóra, czarno-ametystowa szata, srebrny napierśnik i długie białe pasma włosów opadające z przodu na ramiona w S oraz E) • 2★ Abyssal Archmage (diadem z rubinem na czole z przodu nad oczami, długie białe pasma włosów opadające z przodu na pierś w S i E bez tylnego kucyka/rogów, jarzące runy szaty oraz lewitująca Kula Pustki)."
+      },
+      {
+        file: "06_elf_styl1_drow.gif",
+        title: "Elf #62 — Mroczny Elf / Drow (Looktypes 611 / 612)",
+        cat: "live",
+        badge: ["Na Serwerze", "badge-live"],
+        desc: "1★ Shadow Drow (obsydianowa skóra, białe włosy, srebrne naramienniki, różowe oczy) • 2★ Nightblade Drow (poprawiona, miękko pofałdowana peleryna w osi 45° ze srebrną klamrą i falującym brzegiem, srebrna korona z rubinem i zakrzywione ostrze cienia)."
+      },
+      {
+        file: "09_elf_scout_drow.gif",
+        title: "Elf Scout #64 — Drow Stalker / Void-Bow Assassin (Looktypes 609 / 610)",
+        cat: "live",
+        badge: ["Na Serwerze", "badge-live"],
+        desc: "1★ Drow Stalker (ciemno-śliwkowy pancerz zwiadowcy, obsydianowo-srebrny łuk, białe włosy, karmazynowe oczy) • 2★ Nightstalker (kuty ciemnostalowy hełm rangera ze srebrnym grzebieniem i rubinowym klejnotem bez wystającego rogu/pióra, krótka pelerynka 45° oraz rozjarzony Łuk Cienia / Void-Bow)."
+      },
+      {
+        file: "19_dragon_storm_elity.gif",
+        title: "Dragon #34 — Elder Jade Wyrm / Abyssal Storm-Lightning (Looktypes 607 / 608)",
+        cat: "live",
+        badge: ["Na Serwerze", "badge-live"],
+        desc: "1★ Elder Jade Wyrm (głęboki szmaragd łusek, antyczne złoto brzucha i szponów, delikatny złoty połysk grzbietu) • 2★ Abyssal Storm-Lightning Dragon (obsydianowo-indygo łuski, lodowo-cyjanowy brzuch i szpony, dynamiczne pulsujące żyły błyskawic wzdłuż ruchomych skrzydeł oraz wyładowania na końcówkach skrzydeł)."
+      },
+      {
+        file: "01_giant_spider_elity.gif",
+        title: "Giant Spider #38 (Looktypes 597 / 598)",
+        cat: "live",
+        badge: ["Na Serwerze", "badge-live"],
+        desc: "1★ Dread Widow (obsydianowo-krwisty pancerz, kościane kolce) • 2★ Armored Venom Broodmother (opancerzony karapaks + animowana chmura trucizny 7.72)."
+      },
+      {
+        file: "02_demon_elity.gif",
+        title: "Demon #35 (Looktypes 599 / 600)",
+        cat: "live",
+        badge: ["Na Serwerze", "badge-live"],
+        sprites: "sprites",
+        desc: "1★ Abyssal Blood (ciemniejsza krwista skóra, obsydianowe rogi, złote oczy) • 2★ Infernal Overlord (spalone obsydianowe ciało, żyły lawy, kościane naramienniki i języki ognia) • 3. propozycja 2★ Soul Devourer / Pożeracz Dusz (popielata trupia skóra, zielona paszcza jak piec dusz przebijający pęknięciami na piersi, żebra, czarne rogi i pazury) • 4. propozycja 2★ Gilded Idol / Złoty Bożek (ciało odlane w złocie, czarne pęknięcia z rubinowym światłem, rogi, pazury i kolce z czarnego onyksu, rubinowa paszcza). Propozycje 3 i 4 z 3 etapami zwłok; pliki w sprites/02_demon_soul_devourer/ i sprites/02_demon_gilded_idol/."
+      },
+      {
+        file: "03_behemoth_v2_elity.gif",
+        title: "Behemoth #55 — v2 War-Chained / Frost-Iron (Looktypes 605 / 606)",
+        cat: "live",
+        badge: ["Na Serwerze", "badge-live"],
+        desc: "1★ War-Chained (pobliźniona skóra, ciężkie żelazne łańcuchy i kajdany) • 2★ Frost-Iron Colossus (lodowo-żelazna skóra, kute naramienniki i runy mrozu)."
+      },
+      {
+        file: "04_rat_szczurolak_elity.gif",
+        title: "Rat #21 — Szczurołak (Looktypes 601 / 602)",
+        cat: "live",
+        badge: ["Na Serwerze", "badge-live"],
+        desc: "1★ Szczurołak (dwunożny szczuroludź w uprzęży z bursztynowymi oczami) • 2★ Opancerzony Szczurołak Wojownik (żelazna zbroja, czerwone oczy, zakrwawiony topór bojowy)."
+      },
+      {
+        file: "05_caverat_szczurolak_elity.gif",
+        title: "Cave Rat #56 — Jaskiniowy Szczurołak (Looktypes 603 / 604)",
+        cat: "live",
+        badge: ["Na Serwerze", "badge-live"],
+        desc: "1★ Jaskiniowy Szczurołak (ciemnografitowe futro, toksyczno-zielone oczy) • 2★ Jaskiniowy Szczurołak Wojownik (zimna stalowa zbroja i zatruty topór)."
+      },
+      {
+        file: "23_rotworm_elity.gif",
+        title: "Rotworm #26 (Looktypes 536 / 537)",
+        cat: "live",
+        badge: ["Na Serwerze", "badge-live"],
+        desc: "Elitarne Rotwormy wgrane na serwerze: 1★ (Looktype 536, corpse 7087) • 2★ (Looktype 537, corpse 7090)."
+      },
+      {
+        file: "24_cyclops_elity.gif",
+        title: "Cyclops #22 (Looktypes 538 / 539)",
+        cat: "live",
+        badge: ["Na Serwerze", "badge-live"],
+        desc: "Elitarne Cyklopy wgrane na serwerze: 1★ (Looktype 538, corpse 7093) • 2★ Red Cyclops (Looktype 539, corpse 7096)."
+      },
+      {
+        file: "25_warlock_elity.gif",
+        title: "Warlock #10 (Looktypes 540 / 541)",
+        cat: "live",
+        badge: ["Na Serwerze", "badge-live"],
+        desc: "1★ Silver-Robe Warlock (Looktype 540: srebrna szata i niebieski płaszcz) • 2★ Crimson Crown Warlock (Looktype 541: karmazynowa szata ze złotym obszyciem i koroną)."
+      },
+      {
+        file: "26_orc_elity.gif",
+        title: "Orc #5 (Looktypes 551 / 552)",
+        cat: "live",
+        badge: ["Na Serwerze", "badge-live"],
+        desc: "1★ Iron-Axe Orc (Looktype 551: ciemny żelazny topór) • 2★ Armored Orc (Looktype 552: żelazny topór, ciemny hełm i drewniano-żelazna tarcza)."
+      },
+      {
+        file: "27_minotaur_elity.gif",
+        title: "Minotaur #25 (Looktypes 553 / 554)",
+        cat: "live",
+        badge: ["Na Serwerze", "badge-live"],
+        desc: "1★ Iron-Axe Minotaur (Looktype 553: ciemny żelazny topór) • 2★ Armored Minotaur (Looktype 554: stalowy pancerz, hełm, tarcza i topór)."
+      },
+      {
+        file: "28_snake_elity.gif",
+        title: "Snake #28 (Looktypes 557 / 558)",
+        cat: "live",
+        badge: ["Na Serwerze", "badge-live"],
+        desc: "1★ Forest Viper (Looktype 557: ciemnozielona żmija z bursztynowymi oczami) • 2★ Rust-Ringed Viper (Looktype 558: czarno-zielona żmija z rdzawymi pierścieniami, czerwonymi oczami i językiem)."
+      },
+      {
+        file: "29_troll_elity.gif",
+        title: "Troll #15 (Looktypes 559 / 576)",
+        cat: "live",
+        badge: ["Na Serwerze", "badge-live"],
+        desc: "1★ Troll Champion (Looktype 559: złote naramienniki i maczuga) • 2★ Armored Island Troll (Looktype 576: ciemny żelazny hełm i skórzane buty)."
+      },
+      {
+        file: "30_frost_troll_elity.gif",
+        title: "Frost Troll #53 (Looktypes 587 / 588)",
+        cat: "live",
+        badge: ["Na Serwerze", "badge-live"],
+        desc: "1★ Frost Troll Champion (Looktype 587: lodowo-błękitna skóra i śnieżnobiałe włosy) • 2★ Armored Frost Troll (Looktype 588: żelazny hełm i maczuga)."
+      },
+      {
+        file: "31_swamp_troll_elity.gif",
+        title: "Swamp Troll #76 (Looktypes 589 / 590)",
+        cat: "live",
+        badge: ["Na Serwerze", "badge-live"],
+        desc: "1★ Swamp Troll Champion (Looktype 589: bagienna zieleń i różowe włosy) • 2★ Armored Swamp Troll (Looktype 590: żelazny hełm i maczuga)."
+      },
+      {
+        file: "32_wild_warrior_elity.gif",
+        title: "Wild Warrior #47 — Undead (Looktypes 560 / 561)",
+        cat: "live",
+        badge: ["Na Serwerze", "badge-live"],
+        desc: "1★ Turning Undead Wild Warrior (Looktype 560: zardzewiała stal, trupia twarz z odsłoniętą kością i krwią) • 2★ Risen Skeleton Wild Warrior (Looktype 561: poczerniałe żelazo, czaszka w przyłbicy z czerwonymi oczami i żebra w napierśniku)."
+      },
+      {
+        file: "33_valkyrie_elity.gif",
+        title: "Valkyrie #12 — Undead (Looktypes 564 / 565)",
+        cat: "live",
+        badge: ["Na Serwerze", "badge-live"],
+        desc: "1★ Turning Undead Valkyrie (Looktype 564: przygaszone włosy, zimna zardzewiała stal, trupia skóra i rany) • 2★ Risen Skeleton Valkyrie (Looktype 565: czaszka z płonącymi oczami, czarne żelazo, obojczyki i żebra)."
+      },
+      {
+        file: "34_black_knight_elity.gif",
+        title: "Black Knight #46 — Undead (Looktypes 566 / 567)",
+        cat: "live",
+        badge: ["Na Serwerze", "badge-live"],
+        desc: "1★ Turning Undead Black Knight (Looktype 566: trupia twarz, chore oczy i krew na czarnej zbroi) • 2★ Risen Black Knight (Looktype 567: biała czaszka z czerwonymi oczami, żebra w napierśniku i rozdarta zbroja na kręgosłupie)."
+      },
+      {
+        file: "35_assassin_elity.gif",
+        title: "Assassin #224 — Undead (Looktypes 568 / 569)",
+        cat: "live",
+        badge: ["Na Serwerze", "badge-live"],
+        desc: "1★ Turning Undead Assassin (Looktype 568: trupia twarz z kością w policzku i krwią) • 2★ Risen Skeleton Assassin (Looktype 569: czaszka z czerwonymi oczami w kapturze, żebra na piersi i kościste przedramiona)."
+      },
+      {
+        file: "36_amazon_elity.gif",
+        title: "Amazon #77 — Undead (Looktypes 570 / 571)",
+        cat: "live",
+        badge: ["Na Serwerze", "badge-live"],
+        desc: "1★ Turning Undead Amazon (Looktype 570: trupia skóra, przygaszone włosy i ślady ugryzień) • 2★ Risen Skeleton Amazon (Looktype 571: czaszka z płonącymi oczami, żebra i kręgosłup)."
+      },
+      {
+        file: "37_bandit_elity.gif",
+        title: "Bandit #223 — Undead (Looktypes 572 / 573)",
+        cat: "live",
+        badge: ["Na Serwerze", "badge-live"],
+        desc: "1★ Turning Undead Bandit (Looktype 572: trupia twarz z kością w policzku i krwią) • 2★ Risen Skeleton Bandit (Looktype 573: czaszka w kapturze, żebra na piersi i kości w rozdartych spodniach)."
+      },
+      {
+        file: "38_hunter_elity.gif",
+        title: "Hunter #11 — Undead (Looktypes 574 / 575)",
+        cat: "live",
+        badge: ["Na Serwerze", "badge-live"],
+        desc: "1★ Turning Undead Hunter (Looktype 574: wyblakłe szaty, szaro-zielona twarz z kością i zębami) • 2★ Risen Skeleton Hunter (Looktype 575: czaszka w kapturze, żebra w rozdartej tunice i kościste ramiona)."
+      },
+      {
+        file: "39_stalker_elity.gif",
+        title: "Stalker #72 — Undead (Looktypes 577 / 578)",
+        cat: "live",
+        badge: ["Na Serwerze", "badge-live"],
+        desc: "1★ Turning Undead Stalker (Looktype 577: zimna oliwkowa kurtka, popielate włosy i trupia twarz) • 2★ Risen Skeleton Stalker (Looktype 578: czaszka z czerwonymi oczami, żebra z przodu i kręgosłup na plecach)."
+      },
+      {
+        file: "40_witch_elity.gif",
+        title: "Witch #54 — Undead (Looktypes 579 / 580)",
+        cat: "live",
+        badge: ["Na Serwerze", "badge-live"],
+        desc: "1★ Turning Undead Witch (Looktype 579: szaro-zielona trupia twarz i przerzedzone włosy) • 2★ Risen Skeleton Witch (Looktype 580: czaszka z czerwonymi oczami pod rondem kapelusza i żebra w gorsecie)."
+      },
+      {
+        file: "41_necromancer_elity.gif",
+        title: "Necromancer #9 — Undead (Looktypes 581 / 582)",
+        cat: "live",
+        badge: ["Na Serwerze", "badge-live"],
+        desc: "1★ Smouldering Necromancer (Looktype 581: trupia twarz z bursztynowymi oczami, czerwona kość demon skeletona i tląca się szata) • 2★ Burning Demon-Skeleton Necromancer (Looktype 582: płonąca czaszka w kapturze, czerwone żebra i płonący brzeg szaty)."
+      },
+      {
+        file: "42_smuggler_elity.gif",
+        title: "Smuggler #222 — Undead (Looktypes 583 / 584)",
+        cat: "live",
+        badge: ["Na Serwerze", "badge-live"],
+        desc: "1★ Turning Undead Smuggler (Looktype 583: trupia twarz z kością w policzku i brudna koszula) • 2★ Risen Skeleton Smuggler (Looktype 584: czaszka z czerwonymi oczami, żebra w poczerniałej koszuli i zardzewiałe ostrze)."
+      },
+      {
+        file: "43_monk_elity.gif",
+        title: "Monk #57 — Undead (Looktypes 585 / 586)",
+        cat: "live",
+        badge: ["Na Serwerze", "badge-live"],
+        desc: "1★ Turning Undead Monk (Looktype 585: spleśniały habit i zielonkawa trupia twarz) • 2★ Risen Skeleton Monk (Looktype 586: czaszka w kapturze z płonącymi oczami i żebra w rozdartym habicie)."
+      },
+      {
+        file: "44_priestess_elity.gif",
+        title: "Priestess #58 — Undead (Looktypes 591 / 592)",
+        cat: "live",
+        badge: ["Na Serwerze", "badge-live"],
+        desc: "1★ Smouldering Priestess (Looktype 591: trupia twarz z bursztynowymi oczami i tląca się popielata szata) • 2★ Burning Skeleton Priestess (Looktype 592: płonąca czaszka w kapturze, wypalone żebra i płonąca szata)."
+      },
+      {
+        file: "07_elf_styl2_cierniowy.gif",
+        title: "Elf #62 — Styl 2: Cierniowy Druid / Rogaty Elf",
+        cat: "elf",
+        badge: ["Inny styl", "badge-alt"],
+        desc: "1★ Briar Elf (kora, mech, miedziane włosy, młode rogi, szmaragdowe oczy) • 2★ Blight Warden (wielkie poroże jelenia z jarzącymi pąkami, kostur z kryształem, peleryna z liści i zarodniki)."
+      },
+      {
+        file: "08_elf_styl3_sloneczny.gif",
+        title: "Elf #62 — Styl 3: Słoneczny / Astralny Wysoki Elf",
+        cat: "elf",
+        badge: ["Inny styl", "badge-alt"],
+        desc: "1★ Sun-Gilded Elf (szkarłatno-złota tunika, złote naramienniki, szafirowy pas) • 2★ Solar Archon (perłowo-złota zbroja, promienista aureola słońca, świetliste skrzydła i krążące kule światła)."
+      },
+      {
+        file: "02_demon_blazing_elity.gif",
+        title: "Demon #35 — Wariant Blazing Lava (Płonący)",
+        cat: "alt",
+        badge: ["Wariant", "badge-alt"],
+        desc: "Alternatywna wersja 2★ Infernal Demona z mocniejszymi płomieniami i płynącą lawą na ciele."
+      },
+      {
+        file: "03_behemoth_pentagram_elity.gif",
+        title: "Behemoth #55 — Wariant Pentagram + Poświata",
+        cat: "alt",
+        badge: ["Wariant", "badge-alt"],
+        desc: "Alternatywna wersja Behemotha z ognistą poświatą i jarzącym pentagramem na plecach."
+      },
+      {
+        file: "11_gs_star2_fire.gif",
+        title: "Giant Spider #38 — Wariant 2★ Infernal Fire (Ognisty)",
+        cat: "alt",
+        badge: ["Archiwum / Wariant", "badge-alt"],
+        desc: "Wcześniejszy wariant 2★ ognistego pająka (Magma Broodmother) z płonącymi szczelinami na karapaksie."
+      },
+      {
+        file: "12_gs_star2_venom.gif",
+        title: "Giant Spider #38 — Wariant 2★ Armored Venom (bez chmury)",
+        cat: "alt",
+        badge: ["Archiwum / Wariant", "badge-alt"],
+        desc: "Czysta opancerzona wersja 2★ Venom Broodmother bez efektu chmury trucizny."
+      },
+      {
+        file: "13_gs_star2_venom_slime.gif",
+        title: "Giant Spider #38 — Wariant 2★ Venom + Slime",
+        cat: "alt",
+        badge: ["Archiwum / Wariant", "badge-alt"],
+        desc: "Alternatywna wersja 2★ Venom Broodmother z kroplami i śladem zielonego jadu zamiast chmury gazu."
+      },
+      {
+        file: "14_behemoth_v1_volcanic.gif",
+        title: "Behemoth #55 — v1 Scarred Granite / Magma Obsidian",
+        cat: "alt",
+        badge: ["Archiwum / Wariant", "badge-alt"],
+        desc: "Pierwsza seria Behemotha: 1★ Scarred Granite (granit z pęknięciami żaru) • 2★ Magma Obsidian (wulkaniczne żyły lawy)."
+      },
+      {
+        file: "15_rat_v1_rabid_infernal.gif",
+        title: "Rat #21 — v1 Rabid / Infernal",
+        cat: "alt",
+        badge: ["Archiwum / Wariant", "badge-alt"],
+        desc: "Pierwsza seria Rata (przed wersją Szczurołaka): 1★ Rabid Rat • 2★ Infernal Rat."
+      },
+      {
+        file: "16_rat_v2_plague.gif",
+        title: "Rat #21 — v2 Plague-Bitten / Plague-King",
+        cat: "alt",
+        badge: ["Archiwum / Wariant", "badge-alt"],
+        desc: "Kreatywny wariant v2 Rata: 1★ Plague-Bitten (bąble zarazy) • 2★ Plague-King (szmaragdowa grzybnia i opary)."
+      },
+      {
+        file: "17_caverat_v1_ashen_abyssal.gif",
+        title: "Cave Rat #56 — v1 Ashen / Abyssal",
+        cat: "alt",
+        badge: ["Archiwum / Wariant", "badge-alt"],
+        desc: "Pierwsza seria Cave Rata (przed wersją Jaskiniowego Szczurołaka): 1★ Ashen • 2★ Abyssal."
+      },
+      {
+        file: "18_caverat_v2_crystal.gif",
+        title: "Cave Rat #56 — v2 Quartz-Spined / Amethyst Geode",
+        cat: "alt",
+        badge: ["Archiwum / Wariant", "badge-alt"],
+        desc: "Kreatywny wariant v2 Cave Rata: 1★ Quartz-Spined (kryształy kwarcu) • 2★ Amethyst Geode (ametystowa geoda z koroną kryształów)."
+      }
+    ];
+
+    const gallery = document.getElementById("gallery");
+    const lb = document.getElementById("lightbox");
+    const lbImg = document.getElementById("lightbox-img");
+
+    const CACHE_VER = "?v=20261123_2050";
+    const STORAGE_KEY = "regnum_elity_approved";
+    const DELETED_KEY = "regnum_elity_deleted";
+    let approvedSet = new Set();
+    let deletedSet = new Set();
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      if (Array.isArray(saved)) approvedSet = new Set(saved);
+    } catch {}
+    try {
+      const savedDel = JSON.parse(localStorage.getItem(DELETED_KEY) || "[]");
+      if (Array.isArray(savedDel)) deletedSet = new Set(savedDel);
+    } catch {}
+
+    function saveApproved() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify([...approvedSet])); } catch {}
+    }
+    function saveDeleted() {
+      try { localStorage.setItem(DELETED_KEY, JSON.stringify([...deletedSet])); } catch {}
+    }
+
+    let currentFilter = "all";
+    const trashBar = document.getElementById("trash-bar");
+
+    function updateCountsAndFilter() {
+      const activeItems = items.filter((it) => !deletedSet.has(it.file));
+      const trashCount = items.length - activeItems.length;
+      const appCount = activeItems.filter((it) => approvedSet.has(it.file)).length;
+      const unappCount = activeItems.length - appCount;
+
+      const setTxt = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+      setTxt("filter-all", `Wszystkie (${activeItems.length})`);
+      setTxt("filter-live", `Na Serwerze / Stagingu (${activeItems.filter((i) => i.cat === "live").length})`);
+      setTxt("filter-new3", `Propozycje / Nowe (${activeItems.filter((i) => i.cat === "new3").length})`);
+      setTxt("filter-elf", `Inne Style Elfa (${activeItems.filter((i) => i.cat === "elf").length})`);
+      setTxt("filter-alt", `Warianty & Archiwum (${activeItems.filter((i) => i.cat === "alt").length})`);
+      setTxt("filter-approved", `✓ Zatwierdzone (${appCount})`);
+      setTxt("filter-unapproved", `Do sprawdzenia (${unappCount})`);
+      setTxt("filter-trash", `🗑 Kosz (${trashCount})`);
+
+      if (trashBar) trashBar.classList.toggle("visible", currentFilter === "trash" && trashCount > 0);
+
+      document.querySelectorAll(".card").forEach((c) => {
+        const isDel = c.classList.contains("deleted");
+        const isApp = c.classList.contains("approved");
+        let hide = false;
+        if (currentFilter === "trash") {
+          hide = !isDel;
+        } else if (isDel) {
+          hide = true;
+        } else if (currentFilter === "approved") {
+          hide = !isApp;
+        } else if (currentFilter === "unapproved") {
+          hide = isApp;
+        } else if (currentFilter !== "all") {
+          hide = c.dataset.cat !== currentFilter;
+        }
+        c.classList.toggle("hidden", hide);
+      });
+    }
+
+    function render() {
+      gallery.innerHTML = "";
+      items.forEach((it) => {
+        const gifRel = "gifs/" + it.file;
+        const gifSrc = gifRel + CACHE_VER;
+        const isApproved = approvedSet.has(it.file);
+        const isDeleted = deletedSet.has(it.file);
+        const card = document.createElement("article");
+        card.className = "card" + (isApproved ? " approved" : "") + (isDeleted ? " deleted" : "");
+        card.dataset.cat = it.cat;
+        card.dataset.file = it.file;
+        card.innerHTML = `
+          <div class="card-head">
+            <div class="card-title-wrap">
+              <h2 class="card-title">${it.title}</h2>
+              <span class="badge ${it.badge[1]}">${it.badge[0]}</span>
+            </div>
+            <div class="actions">
+              <label class="approve-label">
+                <input type="checkbox" class="approve-cb" ${isApproved ? "checked" : ""} />
+                <span>✓ Zatwierdzony</span>
+              </label>
+              <button class="btn copy-btn" data-url="${gifSrc}">Kopiuj link GIF</button>
+              <a class="btn" href="${gifSrc}" download="${it.file}">Pobierz</a>
+              ${it.sprites ? `<a class="btn" href="https://github.com/kajetanczerwonka-del/regnum-elity/tree/main/${it.sprites}" target="_blank" rel="noopener">Pliki sprite'ów</a>` : ""}
+              <button class="btn ${isDeleted ? "btn-restore" : "btn-delete"} del-btn">${isDeleted ? "↩ Przywróć" : "🗑 Usuń"}</button>
+            </div>
+          </div>
+          <p class="card-desc">${it.desc}</p>
+          <div class="gif-wrap">
+            <img src="${gifSrc}" alt="${it.title}" loading="lazy" />
+          </div>
+        `;
+        card.querySelector(".approve-cb").addEventListener("change", (e) => {
+          const checked = e.target.checked;
+          if (checked) approvedSet.add(it.file);
+          else approvedSet.delete(it.file);
+          card.classList.toggle("approved", checked);
+          saveApproved();
+          updateCountsAndFilter();
+        });
+        card.querySelector(".del-btn").addEventListener("click", (e) => {
+          const btn = e.currentTarget;
+          if (deletedSet.has(it.file)) {
+            deletedSet.delete(it.file);
+            card.classList.remove("deleted");
+            btn.className = "btn btn-delete del-btn";
+            btn.textContent = "🗑 Usuń";
+          } else {
+            deletedSet.add(it.file);
+            card.classList.add("deleted");
+            btn.className = "btn btn-restore del-btn";
+            btn.textContent = "↩ Przywróć";
+          }
+          saveDeleted();
+          updateCountsAndFilter();
+        });
+        card.querySelector("img").addEventListener("click", () => {
+          lbImg.src = gifSrc;
+          lb.classList.add("open");
+        });
+        card.querySelector(".copy-btn").addEventListener("click", async (e) => {
+          const fullUrl = new URL(gifRel, window.location.href).href;
+          try {
+            await navigator.clipboard.writeText(fullUrl);
+            const b = e.currentTarget;
+            const old = b.textContent;
+            b.textContent = "Skopiowano!";
+            b.classList.add("copied");
+            setTimeout(() => { b.textContent = old; b.classList.remove("copied"); }, 1600);
+          } catch {
+            prompt("Skopiuj link:", fullUrl);
+          }
+        });
+        gallery.appendChild(card);
+      });
+      updateCountsAndFilter();
+    }
+
+    document.getElementById("restore-all-btn").addEventListener("click", () => {
+      deletedSet.clear();
+      saveDeleted();
+      render();
+    });
+
+    document.getElementById("copy-deleted-btn").addEventListener("click", async (e) => {
+      const list = [...deletedSet].join("\n");
+      if (!list) return;
+      try {
+        await navigator.clipboard.writeText(list);
+        const b = e.currentTarget;
+        const old = b.textContent;
+        b.textContent = "Skopiowano listę!";
+        b.classList.add("copied");
+        setTimeout(() => { b.textContent = old; b.classList.remove("copied"); }, 1600);
+      } catch {
+        prompt("Lista usuniętych plików:", list);
+      }
+    });
+
+    document.querySelectorAll(".filter-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentFilter = btn.dataset.filter;
+        updateCountsAndFilter();
+      });
+    });
+
+    lb.addEventListener("click", () => lb.classList.remove("open"));
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") lb.classList.remove("open"); });
+
+    render();
+  </script>
+</body>
+</html>
